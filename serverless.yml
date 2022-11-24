@@ -51,6 +51,16 @@ provider:
             - logs:*
           Resource:
             - "*"
+        - Effect: "Allow"
+          Action:
+            - "s3:GetObject"
+            - "s3:GetObjectVersion"
+            - "s3:GetBucketVersioning"
+            - "s3:PutObject"
+            - "s3:PutObjectAcl"
+            - "s3:PutObjectVersionAcl"
+          Resource:
+            - "*"
 
   # you can define service wide environment variables here
   environment:
@@ -265,8 +275,7 @@ resources:
                     - "s3:PutObjectAcl"
                     - "s3:PutObjectVersionAcl"
                   Resource:
-                    - !GetAtt PipelineBucket.Arn
-                    - !Join ["", [!GetAtt PipelineBucket.Arn, "/*"]]
+                    - "*"
                 - Effect: Allow
                   Action:
                     - "codebuild:BatchGetBuilds"
