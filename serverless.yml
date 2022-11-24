@@ -118,6 +118,20 @@ functions:
 
 # you can add CloudFormation resource templates here
 resources:
+  Parameters:
+    GithubUserName:
+      Type: String
+      Default: "gjyoungjr"
+    GithubRepo:
+      Type: String
+      Default: "serverlessguru_code_challenge"
+    GithubBranch:
+      Type: String
+      Default: "main"
+    GithubOAuthToken:
+      Type: String
+      Default: "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"
+
   Resources:
     OrdersTable:
       Type: AWS::DynamoDB::Table
@@ -136,6 +150,157 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 5
           WriteCapacityUnits: 5
+
+    CodePipeline:
+      Type: "AWS::CodePipeline::Pipeline"
+      Properties:
+        RoleArn: !GetAtt CodePipeLineRole.Arn
+        Name: "ServerlessPipeline"
+        ArtifactStore:
+          Location: !Ref PipelineBucket
+          Type: S3
+        # Stages declaration
+        Stages:
+          # Download source code from Github Repo to source-output-artifacts path in S3 Bucket
+          - Name: Source
+            Actions:
+              - Name: SourceAction
+                ActionTypeId:
+                  Category: Source
+                  Owner: ThirdParty
+                  Provider: GitHub
+                  Version: "1"
+                OutputArtifacts:
+                  - Name: MyApp
+                Configuration:
+                  Repo: !Ref GithubRepo
+                  Branch: !Ref GithubBranch
+                  Owner: !Ref GithubUserName
+                  OAuthToken: !Ref GithubOAuthToken
+
+          # Build the project using the BuildProject and Output build artifacts to build-output-artifacts path in S3 Bucket
+          - Name: Build
+            Actions:
+              - Name: BuildAction
+                ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CodeBuild
+                InputArtifacts:
+                  - Name: MyApp
+                OutputArtifacts:
+                  - Name: MyAppBuild
+                Configuration:
+                  ProjectName: !Ref CodeBuild
+
+      # Create role for CodeBuild
+    CodeBuildRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - "codebuild.amazonaws.com"
+              Action:
+                - "sts:AssumeRole"
+        Path: /service-role/
+        Policies:
+          - PolicyName: root
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "s3:GetObject"
+                    - "s3:GetObjectVersion"
+                    - "s3:GetBucketVersioning"
+                    - "s3:PutObject"
+                    - "s3:PutObjectAcl"
+                    - "s3:PutObjectVersionAcl"
+                  Resource:
+                    - !GetAtt PipelineBucket.Arn
+                    - !Join ["", [!GetAtt PipelineBucket.Arn, "/*"]]
+                - Effect: Allow
+                  Action:
+                    - "logs:CreateLogGroup"
+                    - "logs:CreateLogStream"
+                    - "logs:PutLogEvents"
+                    - "cloudfront:CreateInvalidation"
+                  Resource:
+                    - "*"
+
+      # Create role for CodePipeline
+    CodePipeLineRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - "codepipeline.amazonaws.com"
+              Action:
+                - "sts:AssumeRole"
+        Policies:
+          - PolicyName: root
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "s3:GetObject"
+                    - "s3:GetObjectVersion"
+                    - "s3:GetBucketVersioning"
+                    - "s3:GetObjectAcl"
+                    - "s3:PutObject"
+                    - "s3:PutObjectAcl"
+                    - "s3:PutObjectVersionAcl"
+                  Resource:
+                    - !GetAtt PipelineBucket.Arn
+                    - !Join ["", [!GetAtt PipelineBucket.Arn, "/*"]]
+                - Effect: Allow
+                  Action:
+                    - "codebuild:BatchGetBuilds"
+                    - "codebuild:StartBuild"
+                  Resource: "*"
+                - Effect: Allow
+                  Action:
+                    - "codecommit:GetRepository"
+                    - "codecommit:GetBranch"
+                    - "codecommit:GetCommit"
+                    - "codecommit:UploadArchive"
+                    - "codecommit:GetUploadArchiveStatus"
+                    - "codecommit:CancelUploadArchive"
+                  Resource: "*"
+
+    # Create Code Build Project
+    CodeBuild:
+      Type: "AWS::CodeBuild::Project"
+      Properties:
+        Name: !Sub ${AWS::StackName}-CodeBuild
+        ServiceRole: !GetAtt CodeBuildRole.Arn
+        Artifacts:
+          Type: CODEPIPELINE
+          Name: MyProject
+        Environment:
+          ComputeType: BUILD_GENERAL1_SMALL
+          Type: LINUX_CONTAINER
+          Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Source:
+          Type: CODEPIPELINE
+          # This file (buildspec.yml In Source code) contains commands to deploy serverless app
+          BuildSpec: buildspec.yml
+
+    # Create S3 Buckets (Storing Pipeline Artifacts)
+    PipelineBucket:
+      Type: "AWS::S3::Bucket"
+      Properties:
+        BucketName: "pipelineartifacts-serverless-c01"
 
   Outputs:
     OrdersTable:
