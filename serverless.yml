@@ -51,11 +51,6 @@ provider:
             - logs:*
           Resource:
             - "*"
-        - Effect: "Allow"
-          Action:
-            - cloudformation:DescribeStacks
-          Resource:
-            - "*"
 
   # you can define service wide environment variables here
   environment:
@@ -227,8 +222,7 @@ resources:
                     - "s3:PutObjectAcl"
                     - "s3:PutObjectVersionAcl"
                   Resource:
-                    - !GetAtt PipelineBucket.Arn
-                    - !Join ["", [!GetAtt PipelineBucket.Arn, "/*"]]
+                    - "*"
                 - Effect: Allow
                   Action:
                     - "logs:CreateLogGroup"
@@ -239,7 +233,7 @@ resources:
                     - "*"
                 - Effect: Allow
                   Action:
-                    - "cloudformation:DescribeStacks"
+                    - "cloudformation:*"
                   Resource:
                     - "*"
 
