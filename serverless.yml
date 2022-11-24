@@ -291,6 +291,9 @@ resources:
           ComputeType: BUILD_GENERAL1_SMALL
           Type: LINUX_CONTAINER
           Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+          EnvironmentVariables:
+            - Name: STAGE_NAME
+              Value: dev
         Source:
           Type: CODEPIPELINE
           # This file (buildspec.yml In Source code) contains commands to deploy serverless app
