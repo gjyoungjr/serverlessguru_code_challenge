@@ -237,6 +237,11 @@ resources:
                     - "cloudfront:CreateInvalidation"
                   Resource:
                     - "*"
+                - Effect: Allow
+                  Action:
+                    - "cloudformation:DescribeStacks"
+                  Resource:
+                    - "*"
 
       # Create role for CodePipeline
     CodePipeLineRole:
