@@ -229,7 +229,7 @@ resources:
                   Version: "1"
                   Provider: CodeBuild
                 InputArtifacts:
-                  - Name: CodeBuildArtifacts
+                  - Name: BuildArtifacts
                 OutputArtifacts:
                   - Name: DeployBuildArtifacts
                 Configuration:
@@ -313,7 +313,7 @@ resources:
         Source:
           Type: CODEPIPELINE
           # This file (buildspec.yml In Source code) contains commands to pacakge serverless app
-          BuildSpec: buildspecs/buildspec.yml
+          BuildSpec: buildspec.yml
 
     CodeDeployProd:
       Type: "AWS::CodeBuild::Project"
@@ -333,7 +333,7 @@ resources:
         Source:
           Type: CODEPIPELINE
           # This file (buildspec.yml In Source code) contains commands to deploy serverless app
-          BuildSpec: buildspecs/deploy_buildspec.yml
+          BuildSpec: deploy_buildspec.yml
 
     # Create S3 Buckets (Storing Pipeline Artifacts)
     PipelineBucket:
