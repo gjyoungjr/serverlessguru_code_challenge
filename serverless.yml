@@ -9,7 +9,7 @@ provider:
   runtime: nodejs14.x
   timeout: 10
   memorySize: 512
-  stage: dev
+  # stage: dev
   region: us-east-1
 
   # IAM Roles
@@ -68,6 +68,7 @@ provider:
   # you can define service wide environment variables here
   environment:
     TABLE_NAME: !Ref OrdersTable
+    STAGE: ${opt:stage}
 
 # you can add packaging information here
 #package:
@@ -231,7 +232,7 @@ resources:
                 InputArtifacts:
                   - Name: BuildArtifacts
                 OutputArtifacts:
-                  - Name: DeployBuildArtifacts
+                  - Name: ArtifactsDev
                 Configuration:
                   ProjectName: !Ref CodeDeployDev
 
@@ -261,7 +262,7 @@ resources:
                 InputArtifacts:
                   - Name: BuildArtifacts
                 OutputArtifacts:
-                  - Name: DeployBuildArtifacts
+                  - Name: ArtifactsProd
                 Configuration:
                   ProjectName: !Ref CodeDeployProd
 
