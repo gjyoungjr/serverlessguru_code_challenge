@@ -190,7 +190,7 @@ resources:
           # Download source code from Github Repo to source-output-artifacts path in S3 Bucket
           - Name: Source
             Actions:
-              - Name: SourceAction
+              - Name: Source
                 ActionTypeId:
                   Category: Source
                   Owner: ThirdParty
@@ -207,7 +207,7 @@ resources:
           # Build the project using the BuildProject and Output build artifacts to build-output-artifacts path in S3 Bucket
           - Name: Build
             Actions:
-              - Name: BuildAction
+              - Name: Build
                 ActionTypeId:
                   Category: Build
                   Owner: AWS
@@ -219,6 +219,36 @@ resources:
                   - Name: CodeBuildArtifacts
                 Configuration:
                   ProjectName: !Ref CodeBuild
+
+          - Name: DeployToDev
+            Actions:
+              - Name: DeployToDev
+                ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CodeBuild
+                InputArtifacts:
+                  - Name: BuildArtifacts
+                OutputArtifacts:
+                  - Name: DeployBuildArtifacts
+                Configuration:
+                  ProjectName: !Ref CodeDeployDev
+
+          - Name: ProdApproval
+            Actions:
+              - Name: ProdApproval
+                ActionTypeId:
+                  Category: Approval
+                  Owner: AWS
+                  Version: "1"
+                  Provider: Manual
+                # InputArtifacts:
+                #   - Name: BuildArtifacts
+                # OutputArtifacts:
+                #   - Name: DeployBuildArtifacts
+                # Configuration:
+                #   ProjectName: !Ref CodeDeployProd
 
           - Name: DeployToProd
             Actions:
@@ -315,10 +345,10 @@ resources:
           # This file (buildspec.yml In Source code) contains commands to pacakge serverless app
           BuildSpec: buildspec.yml
 
-    CodeDeployProd:
+    CodeDeployDev:
       Type: "AWS::CodeBuild::Project"
       Properties:
-        Name: !Sub ${AWS::StackName}-CodeDeployProd
+        Name: !Sub ${AWS::StackName}-CodeDeployDev
         ServiceRole: !GetAtt CodeBuildRole.Arn
         Artifacts:
           Type: CODEPIPELINE
@@ -335,11 +365,31 @@ resources:
           # This file (buildspec.yml In Source code) contains commands to deploy serverless app
           BuildSpec: deploy_buildspec.yml
 
+    CodeDeployProd:
+      Type: "AWS::CodeBuild::Project"
+      Properties:
+        Name: !Sub ${AWS::StackName}-CodeDeployProd
+        ServiceRole: !GetAtt CodeBuildRole.Arn
+        Artifacts:
+          Type: CODEPIPELINE
+          Name: MyProject
+        Environment:
+          ComputeType: BUILD_GENERAL1_SMALL
+          Type: LINUX_CONTAINER
+          Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+          EnvironmentVariables:
+            - Name: STAGE_NAME
+              Value: prod
+        Source:
+          Type: CODEPIPELINE
+          # This file (buildspec.yml In Source code) contains commands to deploy serverless app
+          BuildSpec: deploy_buildspec.yml
+
     # Create S3 Buckets (Storing Pipeline Artifacts)
     PipelineBucket:
       Type: "AWS::S3::Bucket"
       Properties:
-        BucketName: "pipelineartifacts-serverless-c01"
+        BucketName: !Sub ${AWS::StackName}-pipelineartifacts
 
   Outputs:
     OrdersTable:
