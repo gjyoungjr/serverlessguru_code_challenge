@@ -237,35 +237,59 @@ resources:
                   - "codebuild.amazonaws.com"
               Action:
                 - "sts:AssumeRole"
-        Path: /service-role/
-        Policies:
-          - PolicyName: root
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - "s3:GetObject"
-                    - "s3:GetObjectVersion"
-                    - "s3:GetBucketVersioning"
-                    - "s3:PutObject"
-                    - "s3:PutObjectAcl"
-                    - "s3:PutObjectVersionAcl"
-                  Resource:
-                    - "*"
-                - Effect: Allow
-                  Action:
-                    - "logs:CreateLogGroup"
-                    - "logs:CreateLogStream"
-                    - "logs:PutLogEvents"
-                    - "cloudfront:CreateInvalidation"
-                  Resource:
-                    - "*"
-                - Effect: Allow
-                  Action:
-                    - "cloudformation:*"
-                  Resource:
-                    - "*"
+        Path: /
+        ManagedPolicyArns: ["arn:aws:iam::aws:policy/AdministratorAccess"]
+        # Policies:
+        #   - PolicyName: root
+        #     PolicyDocument:
+        #       Version: "2012-10-17"
+        #       Statement:
+        #         - Effect: Allow
+        #           Action:
+        #             - "s3:GetObject"
+        #             - "s3:GetObjectVersion"
+        #             - "s3:GetBucketVersioning"
+        #             - "s3:PutObject"
+        #             - "s3:PutObjectAcl"
+        #             - "s3:PutObjectVersionAcl"
+        #           Resource:
+        #             - "*"
+        #         - Effect: Allow
+        #           Action:
+        #             - "logs:CreateLogGroup"
+        #             - "logs:CreateLogStream"
+        #             - "logs:PutLogEvents"
+        #             - "cloudfront:CreateInvalidation"
+        #           Resource:
+        #             - "*"
+        #         - Effect: Allow
+        #           Action:
+        #             - "cloudformation:*"
+        #           Resource:
+        #             - "*"
+        #         - Effect: "Allow"
+        #           Action:
+        #             - "s3:ListBucket"
+        #           Resource:
+        #             {
+        #               "Fn::Join":
+        #                 [
+        #                   "",
+        #                   [
+        #                     "arn:aws:s3:::",
+        #                     { "Ref": "ServerlessDeploymentBucket" },
+        #                   ],
+        #                 ],
+        #             }
+        #         - Effect: "Allow"
+        #           Action:
+        #             - "s3:PutObject"
+        #           Resource:
+        #             Fn::Join:
+        #               - ""
+        #               - - "arn:aws:s3:::"
+        #                 - "Ref": "ServerlessDeploymentBucket"
+        #                 - "/*"
 
       # Create role for CodePipeline
     CodePipeLineRole:
