@@ -1,20 +1,4 @@
-# Welcome to Serverless!
-#
-# This file is the main config file for your service.
-# It's very minimal at this point and uses default values.
-# You can always add more config options for more control.
-# We've included some commented out config examples here.
-# Just uncomment any of them to get that config option.
-#
-# For full config options, check the docs:
-#    docs.serverless.com
-#
-# Happy Coding!
-
 service: serverless-code-challenge
-# app and org for use with dashboard.serverless.com
-#app: your-app-name
-#org: your-org-name
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -25,7 +9,6 @@ provider:
   runtime: nodejs14.x
   timeout: 10
   memorySize: 512
-  # you can overwrite defaults here
   stage: dev
   region: us-east-1
 
@@ -95,6 +78,9 @@ provider:
 #    - include-me-dir/**
 
 functions:
+  ## Lambda Functions ##
+
+  # Creates an order
   createOrder:
     handler: functions/createOrder/handler.createOrder
     name: ${sls:stage}-createOrder
@@ -104,6 +90,7 @@ functions:
           path: /order
           method: POST
 
+  # Retrieve an order
   getOrder:
     handler: functions/getOrder/handler.getOrder
     name: ${sls:stage}-getOrder
@@ -117,6 +104,7 @@ functions:
             parameters:
               paths:
                 orderId: true
+  # Updates an order
   updateOrder:
     handler: functions/updateOrder/handler.updateOrder
     name: ${sls:stage}-updateOrder
@@ -131,6 +119,7 @@ functions:
               paths:
                 orderId: true
                 userId: true
+  # Deletes an order
   deleteOrder:
     handler: functions/deleteOrder/handler.deleteOrder
     name: ${sls:stage}-deleteOrder
@@ -146,8 +135,9 @@ functions:
                 orderId: true
                 userId: true
 
-# you can add CloudFormation resource templates here
+# CloudFormation Template starts here
 resources:
+  # Stack Parameters
   Parameters:
     GithubUserName:
       Type: String
@@ -161,8 +151,13 @@ resources:
     GithubOAuthToken:
       Type: String
       Default: "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"
+    AppName:
+      Type: String
+      Default: "serverless-code-challenge"
 
+  # Stack Resources
   Resources:
+    # Creates a Dynamo DB table with (PK, SK )
     OrdersTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -181,11 +176,12 @@ resources:
           ReadCapacityUnits: 5
           WriteCapacityUnits: 5
 
+    # Creates a CI/CD Pipeline
     CodePipeline:
       Type: "AWS::CodePipeline::Pipeline"
       Properties:
         RoleArn: !GetAtt CodePipeLineRole.Arn
-        Name: "ServerlessPipeline"
+        Name: !Sub ${AWS::StackName}-CodePipeline
         ArtifactStore:
           Location: !Ref PipelineBucket
           Type: S3
@@ -201,7 +197,7 @@ resources:
                   Provider: GitHub
                   Version: "1"
                 OutputArtifacts:
-                  - Name: MyApp
+                  - Name: BuildArtifacts
                 Configuration:
                   Repo: !Ref GithubRepo
                   Branch: !Ref GithubBranch
@@ -218,26 +214,28 @@ resources:
                   Version: "1"
                   Provider: CodeBuild
                 InputArtifacts:
-                  - Name: MyApp
+                  - Name: BuildArtifacts
                 OutputArtifacts:
-                  - Name: MyAppBuild
+                  - Name: CodeBuildArtifacts
                 Configuration:
                   ProjectName: !Ref CodeBuild
 
           - Name: DeployToProd
             Actions:
-              - Name: BuildAction
+              - Name: DeployToProdAction
                 ActionTypeId:
                   Category: Build
                   Owner: AWS
                   Version: "1"
                   Provider: CodeBuild
                 InputArtifacts:
-                  - Name: MyApp
+                  - Name: CodeBuildArtifacts
                 OutputArtifacts:
-                  - Name: FinalBuild
+                  - Name: DeployBuildArtifacts
                 Configuration:
                   ProjectName: !Ref CodeDeployProd
+
+      ### IAM Roles ###
 
       # Create role for CodeBuild
     CodeBuildRole:
@@ -312,13 +310,10 @@ resources:
           ComputeType: BUILD_GENERAL1_SMALL
           Type: LINUX_CONTAINER
           Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
-          EnvironmentVariables:
-            - Name: STAGE_NAME
-              Value: dev
         Source:
           Type: CODEPIPELINE
-          # This file (buildspec.yml In Source code) contains commands to deploy serverless app
-          BuildSpec: buildspec.yml
+          # This file (buildspec.yml In Source code) contains commands to pacakge serverless app
+          BuildSpec: buildspecs/buildspec.yml
 
     CodeDeployProd:
       Type: "AWS::CodeBuild::Project"
@@ -333,12 +328,12 @@ resources:
           Type: LINUX_CONTAINER
           Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
           EnvironmentVariables:
-            - Name: env
+            - Name: STAGE_NAME
               Value: dev
         Source:
           Type: CODEPIPELINE
           # This file (buildspec.yml In Source code) contains commands to deploy serverless app
-          BuildSpec: deploy_buildspec.yml
+          BuildSpec: buildspecs/deploy_buildspec.yml
 
     # Create S3 Buckets (Storing Pipeline Artifacts)
     PipelineBucket:
