@@ -224,6 +224,21 @@ resources:
                 Configuration:
                   ProjectName: !Ref CodeBuild
 
+          - Name: DeployToProd
+            Actions:
+              - Name: BuildAction
+                ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CodeBuild
+                InputArtifacts:
+                  - Name: MyApp
+                OutputArtifacts:
+                  - Name: FinalBuild
+                Configuration:
+                  ProjectName: !Ref CodeDeployProd
+
       # Create role for CodeBuild
     CodeBuildRole:
       Type: AWS::IAM::Role
@@ -239,57 +254,6 @@ resources:
                 - "sts:AssumeRole"
         Path: /
         ManagedPolicyArns: ["arn:aws:iam::aws:policy/AdministratorAccess"]
-        # Policies:
-        #   - PolicyName: root
-        #     PolicyDocument:
-        #       Version: "2012-10-17"
-        #       Statement:
-        #         - Effect: Allow
-        #           Action:
-        #             - "s3:GetObject"
-        #             - "s3:GetObjectVersion"
-        #             - "s3:GetBucketVersioning"
-        #             - "s3:PutObject"
-        #             - "s3:PutObjectAcl"
-        #             - "s3:PutObjectVersionAcl"
-        #           Resource:
-        #             - "*"
-        #         - Effect: Allow
-        #           Action:
-        #             - "logs:CreateLogGroup"
-        #             - "logs:CreateLogStream"
-        #             - "logs:PutLogEvents"
-        #             - "cloudfront:CreateInvalidation"
-        #           Resource:
-        #             - "*"
-        #         - Effect: Allow
-        #           Action:
-        #             - "cloudformation:*"
-        #           Resource:
-        #             - "*"
-        #         - Effect: "Allow"
-        #           Action:
-        #             - "s3:ListBucket"
-        #           Resource:
-        #             {
-        #               "Fn::Join":
-        #                 [
-        #                   "",
-        #                   [
-        #                     "arn:aws:s3:::",
-        #                     { "Ref": "ServerlessDeploymentBucket" },
-        #                   ],
-        #                 ],
-        #             }
-        #         - Effect: "Allow"
-        #           Action:
-        #             - "s3:PutObject"
-        #           Resource:
-        #             Fn::Join:
-        #               - ""
-        #               - - "arn:aws:s3:::"
-        #                 - "Ref": "ServerlessDeploymentBucket"
-        #                 - "/*"
 
       # Create role for CodePipeline
     CodePipeLineRole:
@@ -355,6 +319,26 @@ resources:
           Type: CODEPIPELINE
           # This file (buildspec.yml In Source code) contains commands to deploy serverless app
           BuildSpec: buildspec.yml
+
+    CodeDeployProd:
+      Type: "AWS::CodeBuild::Project"
+      Properties:
+        Name: !Sub ${AWS::StackName}-CodeDeployProd
+        ServiceRole: !GetAtt CodeBuildRole.Arn
+        Artifacts:
+          Type: CODEPIPELINE
+          Name: MyProject
+        Environment:
+          ComputeType: BUILD_GENERAL1_SMALL
+          Type: LINUX_CONTAINER
+          Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+          EnvironmentVariables:
+            - Name: env
+              Value: dev
+        Source:
+          Type: CODEPIPELINE
+          # This file (buildspec.yml In Source code) contains commands to deploy serverless app
+          BuildSpec: deploy_buildspec.yml
 
     # Create S3 Buckets (Storing Pipeline Artifacts)
     PipelineBucket:
