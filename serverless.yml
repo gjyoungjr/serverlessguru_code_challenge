@@ -161,7 +161,7 @@ resources:
     OrdersTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: !Sub ${AWS::StackName}-Orders;
+        TableName: !Sub ${AWS::StackName}-Orders
         AttributeDefinitions:
           - AttributeName: PK
             AttributeType: S
