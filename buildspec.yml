@@ -12,8 +12,9 @@ phases:
     commands:
       - mkdir -p target/dev
       - mkdir target/prod
-      - serverless package --verbose --package target/dev
-      - serverless package --verbose --package target/prod
+      - serverless package --verbose --package target/dev --stage dev -r us-east-1
+      - serverless package --verbose --package target/prod --stage prod -r us-east-1
+
 cache:
   paths:
     - node_modules
