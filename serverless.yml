@@ -243,12 +243,6 @@ resources:
                   Owner: AWS
                   Version: "1"
                   Provider: Manual
-                # InputArtifacts:
-                #   - Name: BuildArtifacts
-                # OutputArtifacts:
-                #   - Name: DeployBuildArtifacts
-                # Configuration:
-                #   ProjectName: !Ref CodeDeployProd
 
           - Name: DeployToProd
             Actions:
