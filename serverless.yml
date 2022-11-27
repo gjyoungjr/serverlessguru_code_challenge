@@ -141,16 +141,16 @@ resources:
   Parameters:
     GithubUserName:
       Type: String
-      Default: "gjyoungjr"
+      Default: "<GITHUB_USERNAME>"
     GithubRepo:
       Type: String
-      Default: "serverlessguru_code_challenge"
+      Default: "<GITHUB_REPO>"
     GithubBranch:
       Type: String
-      Default: "main"
+      Default: "<GITHUB_BRANCH>"
     GithubOAuthToken:
       Type: String
-      Default: "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"
+      Default: "<GITHUB_TOKEN>"
     AppName:
       Type: String
       Default: "serverless-code-challenge"
